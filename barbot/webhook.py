@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 
 import telegram
 
-from . import database, app, util, bars
+from . import database, app, util, bars, geo
 
 bot = telegram.Bot(
     token=app.TELEGRAM_BOT_TOKEN
@@ -222,6 +222,48 @@ async def handle_message(update: telegram.Update, message: telegram.Message):
                     message.chat.id,
                     'You must be a member of the main chatroom to list suggestions.'
                 )
+
+        elif message_lower.startswith('/map'):
+            temp_message = await bot.send_message(
+                message.chat.id,
+                'One sec, let me get you a map of the current suggestions...',
+                reply_to_message_id=message.id,
+            )
+            try:
+                names = [s.venue for s in database.get_current_suggestions(bypass_cache=False)]
+                unrecognised_names, bars = BARS.match_bars(names)
+                letter_map, png = await geo.map_bars_to_png(bars, (720, 720))
+            except Exception as err:
+                print(f'Map rendering failed: {err}')
+                await bot.send_message(
+                    message.chat.id,
+                    "Sorry: We're having some trouble generate maps right now.",
+                    reply_to_message_id=message.id,
+                )
+            else:
+                if png:
+                    markdown = ['_', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}']
+                    table = {ord(m): ord(' ') for m in markdown}
+                    location_text = '\n'.join([f'*{letter}*: {bar.name}' for letter, bar in sorted(letter_map.items())] + [f'?: {n}' for n in unrecognised_names])
+                    await bot.send_photo(
+                        message.chat.id,
+                        png,
+                        # limit the length to not break the api character length limits
+                        f'The currently suggested bars:\n{location_text}'.translate(table)[:1000],
+                        parse_mode='MarkdownV2',
+                        reply_to_message_id=message.id,
+                    )
+                else:
+                    await bot.send_message(
+                        message.chat.id,
+                        "There aren't any suggested bars that we can map.",
+                        reply_to_message_id=message.id,
+                    )
+            finally:
+                try:
+                    await bot.delete_message(message.chat.id, temp_message.message_id)
+                except:
+                    pass
 
         elif app.BARNIGHT_HASHTAG in message_lower:
             await bot.send_message(

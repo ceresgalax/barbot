@@ -31,6 +31,12 @@ variable "bar_spreadsheet" {
   sensitive   = true
 }
 
+variable "selenium_server_url" {
+  description = "URL of a Selenium server (Grid) used for rendering images."
+  type        = string
+  sensitive   = true
+}
+
 variable "timezone" {
   description = "Timezone to use for scheduled event times"
   type        = string

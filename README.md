@@ -14,7 +14,8 @@ The file will look something like this:
   "WebhookFunction": {
     "MAIN_CHAT_ID": "<XXXXX>",
     "TELEGRAM_BOT_TOKEN": "<XXXXX>:<XXXXX>",
-    "BAR_SPREADSHEET": "https://docs.google.com/spreadsheets/d/<XXXXX>/"
+    "BAR_SPREADSHEET": "https://docs.google.com/spreadsheets/d/<XXXXX>/",
+    "SELENIUM_SERVER_URL": "http://<XXXXX>:4444"
   }
 }
 ```

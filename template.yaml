@@ -35,3 +35,4 @@ Resources:
           DYNAMO_WEEK_TABLE_NAME: barbot-local-table
           BOT_USERNAME: barbot-local
           BAR_SPREADSHEET:
+          SELENIUM_SERVER_URL:

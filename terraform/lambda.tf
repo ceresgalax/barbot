@@ -158,6 +158,7 @@ resource "aws_lambda_function" "api" {
       CREATE_POLL_SCHEDULE_NAME = "${var.prefix}_create_poll"
       CLOSE_POLL_SCHEDULE_NAME = "${var.prefix}_close_poll"
       BAR_SPREADSHEET: var.bar_spreadsheet,
+      SELENIUM_SERVER_URL: var.selenium_server_url,
     }
   }
 
