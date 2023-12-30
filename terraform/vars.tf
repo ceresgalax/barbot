@@ -25,6 +25,12 @@ variable "telegram_bot_token" {
   sensitive   = true
 }
 
+variable "bar_spreadsheet" {
+  description = "URL of the Google Docs sheet containing the known bars."
+  type        = string
+  sensitive   = true
+}
+
 variable "timezone" {
   description = "Timezone to use for scheduled event times"
   type        = string

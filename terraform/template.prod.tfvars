@@ -2,6 +2,7 @@ prefix               = "barbot"
 bot_username         = "CityFursBarBot"
 telegram_bot_token   = ""
 main_chat_id         = ""
+bar_spreadsheet      = ""
 
 aws_region           = "us-west-2"
 timezone             = "America/Los_Angeles"

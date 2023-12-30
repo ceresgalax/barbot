@@ -27,9 +27,15 @@ os.chdir(os.path.normpath(os.path.join(__file__, "..")))
 run_or_die("docker compose create")
 run_or_die("docker compose start")
 run_or_die("sam build")
-os.system(
+
+# set up dynamodb
+state = os.system(
     "aws dynamodb create-table --table-name barbot-local-table --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=10 --endpoint-url http://localhost:8000"
 )
+if state == 0:
+    run_or_die("""aws dynamodb update-item --table-name barbot-local-table --endpoint-url http://localhost:8000 --key '{"id": {"S": "current"}}' --update-expression 'SET venues = :empty' --expression-attribute-values '{":empty": {"M": {}}}'""")
+    run_or_die("""aws dynamodb update-item --table-name barbot-local-table --endpoint-url http://localhost:8000 --key '{"id": {"S": "current"}}' --update-expression 'SET poll_id = :p' --expression-attribute-values '{":p": {"N": "0"}}'""")
+
 run_or_die("./set-webhook.py local")
 os.execvp(
     "sam",

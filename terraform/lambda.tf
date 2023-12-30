@@ -157,6 +157,7 @@ resource "aws_lambda_function" "api" {
       SCHEDULE_GROUP_NAME: aws_scheduler_schedule_group.barbot.name
       CREATE_POLL_SCHEDULE_NAME = "${var.prefix}_create_poll"
       CLOSE_POLL_SCHEDULE_NAME = "${var.prefix}_close_poll"
+      BAR_SPREADSHEET: var.bar_spreadsheet,
     }
   }
 

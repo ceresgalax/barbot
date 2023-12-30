@@ -8,11 +8,13 @@ from typing import Dict, Any, Optional
 
 import telegram
 
-from . import database, app, util
+from . import database, app, util, bars
 
 bot = telegram.Bot(
     token=app.TELEGRAM_BOT_TOKEN
 )
+
+BARS = bars.Bars(app.BAR_SPREADSHEET)
 
 
 def error(message: str):
@@ -97,6 +99,10 @@ async def add_suggestion(venue: str, user_id: int, username: str) -> None:
             f'characters long.'
         )
         return
+
+    # try to use the canonical name of the bar (if we can find one)
+    bar = BARS.match_bar(venue)
+    venue = bar.name if bar else venue
 
     suggestions = database.get_current_suggestions(bypass_cache=True)
 
