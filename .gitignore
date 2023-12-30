@@ -5,3 +5,7 @@ terraform.tfvars
 *.backup
 .terraform
 #.terraform.lock.hcl
+.aws-sam
+env.json
+barbot.egg-info
+__pycache__

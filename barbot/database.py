@@ -21,7 +21,10 @@ class Suggestion(object):
 last_suggestions_update_time = datetime.datetime(day=1, month=1, year=1)
 cached_suggestions: List[Suggestion] = []
 
-dynamodb = boto3.client('dynamodb')
+if app.DYNAMODB_ENDPOINT_URL:
+    dynamodb = boto3.client('dynamodb', endpoint_url=app.DYNAMODB_ENDPOINT_URL)
+else:
+    dynamodb = boto3.client('dynamodb')
 
 
 def get_current_poll_id() -> Optional[int]:
@@ -30,7 +33,7 @@ def get_current_poll_id() -> Optional[int]:
         Key={'id': {'S': 'current'}},
         ConsistentRead=True
     )
-    item = result['Item']
+    item = result.get('Item', {})
     return int(item.get('poll_id', {}).get('N', 0))
 
 
@@ -61,7 +64,9 @@ def get_current_suggestions(bypass_cache=False) -> List[Suggestion]:
         TableName=app.DYNAMO_WEEK_TABLE_NAME,
         Key={'id': {'S': 'current'}}
     )
-    item = get_result['Item']
+    item = get_result.get('Item')
+    if not item:
+        return []
     suggestions_map = item['venues']['M']
     suggestions = [make_suggestion(k, v) for k, v in suggestions_map.items()]
     cached_suggestions = suggestions
@@ -74,7 +79,7 @@ def get_suggestion_by_uuid(hex_uuid: str) -> Optional[Suggestion]:
         TableName=app.DYNAMO_WEEK_TABLE_NAME,
         Key={'id': {'S': 'current'}},
     )
-    venue_data = get_result['Item']['venues']['M'].get(hex_uuid)
+    venue_data = get_result.get('Item', {}).get('venues', {}).get('M', {}).get(hex_uuid)
     if not venue_data:
         return None
     return make_suggestion(hex_uuid, venue_data)

@@ -5,6 +5,7 @@ import os
 MAIN_CHAT_ID = int(os.environ.get('MAIN_CHAT_ID', '0'))
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 WEBHOOK_SECRET = os.environ.get('TELEGRAM_BOT_API_SECRET_TOKEN')
+DYNAMODB_ENDPOINT_URL = os.environ.get('DYNAMODB_ENDPOINT_URL')
 DYNAMO_WEEK_TABLE_NAME = os.environ.get('DYNAMO_WEEK_TABLE_NAME')
 BOT_USERNAME = os.environ.get('BOT_USERNAME')
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL')

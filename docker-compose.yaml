@@ -1,0 +1,28 @@
+version: '3.5'
+
+services:
+  dynamodb:
+    container_name: barbot-dynamodb
+    image: amazon/dynamodb-local
+    networks:
+      - barbot
+    ports:
+      - '8000:8000'
+  ngrok:
+    container_name: barbot-ngrok
+    image: ngrok/ngrok
+    networks:
+      - barbot
+    extra_hosts:
+      host.docker.internal: host-gateway
+    command:
+      - "http"
+      - "host.docker.internal:33131"
+    ports:
+      - '4040:4040'
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+
+networks:
+  barbot:
+    name: barbot

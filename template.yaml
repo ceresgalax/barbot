@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: barbot
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 128
+
+Resources:
+  WebhookFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: barbot.webhook.handle_webhook
+      Runtime: python3.11
+      Timeout: 10
+      Architectures:
+        - x86_64
+      Events:
+        Api:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /webhook
+            Method: post
+            Auth:
+              Authorizer: 'NONE'
+      Environment:
+        Variables:
+          MAIN_CHAT_ID:
+          TELEGRAM_BOT_TOKEN:
+          WEBHOOK_SECRET: 'NONE'
+          DYNAMODB_ENDPOINT_URL: http://barbot-dynamodb:8000
+          DYNAMO_WEEK_TABLE_NAME: barbot-local-table
+          BOT_USERNAME: barbot-local
+          BAR_SPREADSHEET:
