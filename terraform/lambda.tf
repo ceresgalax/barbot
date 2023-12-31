@@ -64,57 +64,6 @@ resource "aws_iam_role" "api" {
   }
 }
 
-#resource "aws_iam_policy" "lambda_policy" {
-#  name = "${var.prefix}_application_policy"
-#  policy = <<EOF
-#{
-#    "Version": "2012-10-17",
-#    "Statement": [
-#        {
-#            "Effect": "Allow",
-#            "Action": [
-#              "logs:CreateLogGroup",
-#              "logs:CreateLogStream",
-#              "logs:DescribeLogGroups",
-#              "logs:DescribeLogStreams",
-#              "logs:PutLogEvents",
-#              "logs:GetLogEvents",
-#              "logs:FilterLogEvents"
-#            ],
-#            "Resource": "*"
-#        },
-#        {
-#          "Effect": "Allow",
-#          "Action": [
-#              "dynamodb:BatchGetItem",
-#              "dynamodb:GetItem",
-#              "dynamodb:Query",
-#              "dynamodb:Scan",
-#              "dynamodb:BatchWriteItem",
-#              "dynamodb:PutItem",
-#              "dynamodb:UpdateItem",
-#              "dynamodb:DescribeTable"
-#          ],
-#          "Resource": "*"
-#        },
-#        {
-#          "Effect": "Allow",
-#          "Action": [
-#            ""scheduler:GetSchedule""
-#          ],
-#          "Resource": "${}"
-#        }
-#    ]
-#}
-#EOF
-#}
-#
-#resource "aws_iam_role_policy_attachment" "app_policy_for_api_lambda" {
-#  role = aws_iam_role.api.name
-#  policy_arn = aws_iam_policy.lambda_policy.arn
-#}
-
-
 data "archive_file" "lambda_archive" {
   source_dir = "../build/lambda_stage"
   output_path = "../build/lambda.zip"
@@ -122,6 +71,8 @@ data "archive_file" "lambda_archive" {
 }
 
 locals {
+  lambda_runtime = "python3.12"
+
   functions = {
     webhook = {
       handler = "barbot.webhook.handle_webhook"
@@ -145,7 +96,7 @@ resource "aws_lambda_function" "api" {
 
   source_code_hash = data.archive_file.lambda_archive.output_base64sha256
 
-  runtime = "python3.9"
+  runtime = local.lambda_runtime
 
   environment {
     variables = {
@@ -177,5 +128,5 @@ resource "aws_lambda_layer_version" "libs" {
   layer_name = "${var.prefix}-libs"
   filename = data.archive_file.libs.output_path
   source_code_hash = data.archive_file.libs.output_base64sha256
-  compatible_runtimes = ["python3.9"]
+  compatible_runtimes = [local.lambda_runtime]
 }

@@ -50,7 +50,7 @@ resource "aws_lambda_function" "authorizer" {
 
   source_code_hash = data.archive_file.lambda_archive.output_base64sha256
 
-  runtime = "python3.9"
+  runtime = local.lambda_runtime
 
   environment {
     variables = {
