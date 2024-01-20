@@ -36,3 +36,29 @@ Resources:
           BOT_USERNAME: barbot-local
           BAR_SPREADSHEET:
           SELENIUM_SERVER_URL:
+  SequenceFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: barbot.sequence.handle_function_call
+      Runtime: python3.11
+      Timeout: 10
+      Architectures:
+        - x86_64
+      Events:
+        Schedule:
+          Type: Schedule # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Schedule: rate(1 minute)
+            Input: '{"barnight_event_type": ""}'
+            Enabled: false
+      Environment:
+        Variables:
+          MAIN_CHAT_ID:
+          TELEGRAM_BOT_TOKEN:
+          WEBHOOK_SECRET: 'NONE'
+          DYNAMODB_ENDPOINT_URL: http://barbot-dynamodb:8000
+          DYNAMO_WEEK_TABLE_NAME: barbot-local-table
+          BOT_USERNAME: barbot-local
+          BAR_SPREADSHEET:
+          SELENIUM_SERVER_URL:

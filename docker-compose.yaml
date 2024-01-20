@@ -8,6 +8,7 @@ services:
       - barbot
     ports:
       - '8000:8000'
+    command: ['-jar', 'DynamoDBLocal.jar', '-sharedDb']
   ngrok:
     container_name: barbot-ngrok
     image: ngrok/ngrok

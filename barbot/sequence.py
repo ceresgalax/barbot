@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 
 import telegram
 
-from . import app, database, util, schedule_util
+from . import app, bars, database, util, schedule_util
 
 bot = telegram.Bot(
     token=app.TELEGRAM_BOT_TOKEN
@@ -48,6 +48,19 @@ async def handle_create_poll(event: Dict[str, Any]) -> Dict[str, Any]:
         await bot.pin_chat_message(chat_id=app.MAIN_CHAT_ID, message_id=send_message_result.id)
     else:
         try:
+            png, png_text = await util.get_map_suggestions_message_data(bars.Bars(app.BAR_SPREADSHEET), suggestions)
+            if png:
+                await bot.send_photo(
+                    app.MAIN_CHAT_ID,
+                    png,
+                    png_text,
+                    parse_mode='MarkdownV2',
+                )
+            else:
+                print('Could not map any bars for the poll!')
+        except Exception as err:
+            print(f'Could not send the map before the poll: {err}')
+        try:
             send_poll_result = await bot.send_poll(
                 chat_id=app.MAIN_CHAT_ID,
                 question='Where are we going for barnight? (multiple choice)',
@@ -72,6 +85,8 @@ async def handle_create_poll(event: Dict[str, Any]) -> Dict[str, Any]:
         database.set_current_poll_id(poll_id)
         await bot.pin_chat_message(chat_id=app.MAIN_CHAT_ID, message_id=poll_id)
 
+    # TODO: if `bot.pin_chat_message` fails, this will never be called,
+    # which means we'll re-use the suggestions next round
     database.clear_suggestions()
     return {}
 
