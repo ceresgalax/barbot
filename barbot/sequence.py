@@ -133,13 +133,20 @@ async def handle_choose_winner(event: Dict[str, Any]) -> Dict[str, Any]:
 
     chosen_option = random.choice(top_options)
 
-    message = f'Calling it for {chosen_option.text}!'
+    text = f'*{chosen_option.text}*'
+    bar = bars.Bars(app.BAR_SPREADSHEET).match_bar(chosen_option.text)
+    if bar:
+        link = f'https://www.google.com/maps/dir/?api=1&destination={bar.latitude},{bar.longitude}'
+        text = f'[{text}]({link})'
+    message = f'Calling it for {text}\!'
     if len(top_options) > 1:
-        message += f' (Chosen randomly out of the top {len(top_options)} options)'
+        message += f' \(Chosen randomly out of the top {len(top_options)} options\)'
 
     message_result = await bot.send_message(
         chat_id=app.MAIN_CHAT_ID,
         text=message,
+        parse_mode='MarkdownV2',
+        disable_web_page_preview=True,
         reply_to_message_id=poll_id
     )
 
