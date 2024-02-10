@@ -153,6 +153,7 @@ async def add_suggestion(venue: str, user_id: int, username: str) -> None:
                 chat_id=app.MAIN_CHAT_ID,
                 text=f'@{username} has successfully suggested "{text}" for the next {util.escape_markdown_v2(app.BARNIGHT_HASHTAG)} poll\!',
                 parse_mode='MarkdownV2',
+                disable_web_page_preview=True,
             )
 
 
