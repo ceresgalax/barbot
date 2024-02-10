@@ -64,7 +64,7 @@ def _map_bars_to_png(
             location=coordinate,
             icon=folium.Icon(icon=letter, prefix="fa"),
         ).add_to(folium_map)
-    folium.FitBounds(_get_bounds(coordinates, MAP_PADDING)).add_to(folium_map)
+    folium.FitBounds(_get_bounds(coordinates, MAP_PADDING), padding=(2,2)).add_to(folium_map)
     html = folium_map.get_root().render()
     return (letter_map, _render_html(cast(str, html)))
 
