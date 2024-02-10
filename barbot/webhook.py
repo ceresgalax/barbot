@@ -3,6 +3,7 @@ import json
 import re
 import sys
 import traceback
+import urllib.parse
 import uuid
 from typing import Dict, Any, Optional
 
@@ -142,10 +143,16 @@ async def add_suggestion(venue: str, user_id: int, username: str) -> None:
                 )
                 return
 
+            text = venue
+            if bar:
+                link = f'https://www.google.com/maps/search/?api=1&query={urllib.parse.quote_plus(venue + ", " + bar.address)}'
+                text = f'[{text}]({link})'
+
             # Send message to the main chat to let people know that a suggestion was added.
             await bot.send_message(
                 chat_id=app.MAIN_CHAT_ID,
-                text=f'@{username} has successfully suggested "{venue}" for the next {app.BARNIGHT_HASHTAG} poll!'
+                text=f'@{username} has successfully suggested "{text}" for the next {util.escape_markdown_v2(app.BARNIGHT_HASHTAG)} poll\!',
+                parse_mode='MarkdownV2',
             )
 
 

@@ -22,3 +22,8 @@ async def get_map_suggestions_message_data(bars: Bars, suggestions: List[Suggest
     # photo captions can only be 1024 characters long
     text = f'The currently suggested bars:\n{location_text}'.translate(table)[:1000]
     return png, text
+
+
+def escape_markdown_v2(text: str) -> str:
+    markdown = ['_', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}']
+    return ''.join('\\' + c if c in markdown else c for c in text)
