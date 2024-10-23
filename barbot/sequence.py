@@ -21,10 +21,10 @@ def handle_function_call(event: Dict[str, Any], context: Dict[str, Any]) -> Dict
 
 
 async def handle_ask_for_suggestions(event: Dict[str, Any]) -> Dict[str, Any]:
-    # if schedule_util.is_fourth_tuesday_tomorrow():
-    #     text = 'El Rio this week!'
-    #     await bot.send_message(chat_id=app.MAIN_CHAT_ID, text=text)
-    #     return {}
+    if schedule_util.is_fourth_weds_this_week():
+        text = 'El Rio this week! No voting :з'
+        await bot.send_message(chat_id=app.MAIN_CHAT_ID, text=text)
+        return {}
 
     text = f'It\'s time for bar night suggestions! Message @{app.BOT_USERNAME} or end a message with ' \
            f'{app.BARNIGHT_HASHTAG} to input a suggestion!'
@@ -37,6 +37,11 @@ async def handle_ask_for_suggestions(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def handle_create_poll(event: Dict[str, Any]) -> Dict[str, Any]:
+    if schedule_util.is_fourth_weds_this_week():
+        text = 'El Rio this week! No voting :з'
+        await bot.send_message(chat_id=app.MAIN_CHAT_ID, text=text)
+        return {}
+
     database.set_current_poll_id(0)
     suggestions = database.get_current_suggestions(bypass_cache=True)
 
@@ -97,6 +102,11 @@ async def handle_create_poll(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def handle_poll_reminder(event: Dict[str, Any]) -> Dict[str, Any]:
+    if schedule_util.is_fourth_weds_this_week():
+        text = 'El Rio this week! No voting :з'
+        await bot.send_message(chat_id=app.MAIN_CHAT_ID, text=text)
+        return {}
+
     poll_id = database.get_current_poll_id()
     if not poll_id:
         return {}
@@ -115,6 +125,11 @@ async def handle_poll_reminder(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def handle_choose_winner(event: Dict[str, Any]) -> Dict[str, Any]:
+    if schedule_util.is_fourth_weds_this_week():
+        text = 'El Rio this week! No voting :з'
+        await bot.send_message(chat_id=app.MAIN_CHAT_ID, text=text)
+        return {}
+
     poll_id = database.get_current_poll_id()
 
     if not poll_id:
