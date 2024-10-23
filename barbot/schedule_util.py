@@ -55,3 +55,20 @@ def get_schedule_time(schedule_name: str) -> Optional[str]:
 
     next_time = cron.get_next(datetime.datetime)
     return next_time.strftime('%A at %I:%M%p')
+
+
+def is_fourth_weds_this_week() -> bool:
+    today = datetime.date.today()
+    tomorrow = today + datetime.timedelta(days=1)
+    day_after_tomorrow = today + datetime.timedelta(days=2)
+    first_day_of_month = tomorrow.replace(day=1)
+
+    if today.weekday() == 0: # monday
+        # tuesday = tomorrow
+        wednesday = day_after_tomorrow
+    elif today.weekday() == 1: # tuesday
+        # tuesday = today
+        wednesday = tomorrow
+
+    # the delta between the first day of the month and the fourth weds is at least 21
+    return (wednesday - first_day_of_month).days >= 21

@@ -21,6 +21,11 @@ def handle_function_call(event: Dict[str, Any], context: Dict[str, Any]) -> Dict
 
 
 async def handle_ask_for_suggestions(event: Dict[str, Any]) -> Dict[str, Any]:
+    # if schedule_util.is_fourth_tuesday_tomorrow():
+    #     text = 'El Rio this week!'
+    #     await bot.send_message(chat_id=app.MAIN_CHAT_ID, text=text)
+    #     return {}
+
     text = f'It\'s time for bar night suggestions! Message @{app.BOT_USERNAME} or end a message with ' \
            f'{app.BARNIGHT_HASHTAG} to input a suggestion!'
     poll_time = schedule_util.get_schedule_time(app.CREATE_POLL_SCHEDULE_NAME)
