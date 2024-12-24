@@ -109,41 +109,76 @@ class Bars:
 
 
 class TestBars(unittest.TestCase):
-    def test_normalize_name(self):
+    def test_normalize_name_with_numbers(self):
         self.assertEqual("440", _normalize_name("440"))
         self.assertEqual("440castro", _normalize_name("440 Castro"))
-        names = [
-            "smuggler's cove",
-            "Smuggler's Cove",
-            "smugglers coVE",
-            "smugglerscove",
-        ]
-        for name in names:
-            self.assertEqual(_normalize_name(names[0]), _normalize_name(name))
 
-    def test_normalize_spreadsheet_url(self):
-        canonical = "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv"
+    def test_normalize_name_with_casing(self):
+        self.assertEqual("smugglerscove", _normalize_name("Smugglers COVE"))
+        self.assertEqual("smugglerscove", _normalize_name("Smugglers Cove"))
+        self.assertEqual("smugglerscove", _normalize_name("smugglers coVE"))
+
+    def test_normalize_name_with_nonalphanumeric(self):
+        self.assertEqual("smugglerscove", _normalize_name("smuggler's cove"))
+        self.assertEqual("smugglerscove", _normalize_name("'smuggler's cove\""))
+
+    def test_normalize_name_with_spacing(self):
+        self.assertEqual("smugglerscove", _normalize_name(" smugglers\tCove"))
+        self.assertEqual("smugglerscove", _normalize_name("smugglers \n cove "))
+        self.assertEqual("smugglerscove", _normalize_name(" sm u gglersc ove"))
+
+    def test_normalize_name_with_substitutions(self):
+        self.assertNotEqual("smugglerscove", _normalize_name("Śmugglers cove"))
+        self.assertNotEqual("smugglerscove", _normalize_name("smugglers c0ve"))
+
+    def test_normalize_spreadsheet_url_full(self):
         self.assertEqual(
-            canonical,
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
             _normalize_spreadsheet_url(
                 "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv"
             ),
         )
+
+    def test_normalize_spreadsheet_url_noformat(self):
         self.assertEqual(
-            canonical,
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
             _normalize_spreadsheet_url(
                 "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export"
             ),
         )
         self.assertEqual(
-            canonical,
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
+            _normalize_spreadsheet_url(
+                "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export/"
+            ),
+        )
+
+    def test_normalize_spreadsheet_url_querystring(self):
+        self.assertEqual(
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
+            _normalize_spreadsheet_url(
+                "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?level=four"
+            ),
+        )
+
+    def test_normalize_spreadsheet_url_noexport(self):
+        self.assertEqual(
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
             _normalize_spreadsheet_url(
                 "https://docs.google.com/spreadsheets/d/1QBk_HhV6"
             ),
         )
         self.assertEqual(
-            canonical,
-            _normalize_spreadsheet_url("docs.google.com/spreadsheets/d/1QBk_HhV6"),
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
+            _normalize_spreadsheet_url(
+                "https://docs.google.com/spreadsheets/d/1QBk_HhV6/"
+            ),
+        )
+
+    def test_normalize_spreadsheet_url_noscheme(self):
+        self.assertEqual(
+            "https://docs.google.com/spreadsheets/d/1QBk_HhV6/export?format=csv",
+            _normalize_spreadsheet_url("https://docs.google.com/spreadsheets/d/1QBk_HhV6"),
         )
 
     def test_parse_bars(self):
