@@ -20,7 +20,7 @@ class Bar(NamedTuple):
 
 
 def _normalize_name(name: str) -> str:
-    return "".join(c.lower() for c in name if c.isalpha())
+    return "".join(c.lower() for c in name if c.isalnum())
 
 
 def _normalize_spreadsheet_url(url: str) -> str:
@@ -110,6 +110,8 @@ class Bars:
 
 class TestBars(unittest.TestCase):
     def test_normalize_name(self):
+        self.assertEqual("440", _normalize_name("440"))
+        self.assertEqual("440castro", _normalize_name("440 Castro"))
         names = [
             "smuggler's cove",
             "Smuggler's Cove",
