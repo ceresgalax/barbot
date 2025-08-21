@@ -226,7 +226,7 @@ async def send_winning_result(
     chat_id = app_settings.MAIN_CHAT_ID
     if app_settings.ANNOUNCEMENT_CHAT_ID:
         chat_id = app_settings.ANNOUNCEMENT_CHAT_ID
-        message = f'The next bar night will be held at {bar_name_markdown}\\.'
+        message = f'The next bar night will be held at {bar_name_markdown}\\.\nEvent starts at 7:00pm and at full swing by 7:30pm'
     else:
         message = main_chat_message_func(bar_name_markdown)
 
