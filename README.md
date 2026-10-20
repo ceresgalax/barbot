@@ -1,10 +1,10 @@
 # barbot
 
-Barbot is a Telegram bot that automates decision making for our weekly bar night.
+Barbot is a Telegram bot that automates decision-making for our weekly bar night.
 
 ## Running the Bot Locally
 
-0. Ensure the [aws](https://aws.amazon.com/cli/) and [sam](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) CLI tools are install.
+0. Ensure the [aws](https://aws.amazon.com/cli/) and [sam](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) CLI tools are installed.
 
 1. Create a file at the root of the repo named `env.json`.
 
@@ -68,3 +68,23 @@ echo '{"barnight_event_type": "CreatePoll"}' | sam local invoke SequenceFunction
 
 5. Use `terraform workspace show` and `terraform workspace select` to choose the correct terraform state to use. 
    `default` workspace is used for prod, and `test` is used for the 'testing' bot and channel.
+
+## Deploying with GitHub Actions
+
+The `Deploy` workflow (`.github/workflows/deploy.yml`) deploys to one of two GitHub Environments:
+
+| GitHub Environment | Triggered by                                   | Terraform workspace | Base tfvars              |
+|--------------------|------------------------------------------------|---------------------|--------------------------|
+| `production`       | Pushing a `v*` tag, or running manually        | `default`           | `base.prod.tfvars`       |
+| `testing`          | Running manually (Actions → Deploy → Run workflow) | `test`          | `base.test.tfvars`       |
+
+Each environment needs its own copy of these secrets (Settings → Environments → *environment* → Environment secrets):
+
+- `ACTIONS_ROLE_ARN`
+- `TELEGRAM_BOT_TOKEN`
+- `MAIN_CHAT_ID`
+- `BAR_SPREADSHEET`
+- `SELENIUM_SERVER_URL`
+- `ANNOUNCEMENT_CHAT_ID`
+
+The secret names are the same in both environments; the workflow picks up whichever set belongs to the environment it is deploying to.

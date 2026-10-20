@@ -5,23 +5,61 @@ on:
     tags:
       - v[0-9]+.*
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: choice
+        options:
+          - testing
+          - production
+        default: testing
 
 permissions:
   id-token: write # This is required for assuming AWS role via OIDC.
   contents: read  # This is required for actions/checkout
 
+env:
+  # Version tags always deploy to production. Manual runs deploy to the chosen environment.
+  DEPLOY_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || inputs.environment }}
+
 jobs:
   deploy:
-    name: 'Deploy'
+    name: 'Deploy (${{ github.event_name == ''push'' && ''production'' || inputs.environment }})'
     runs-on: ubuntu-latest
-    environment: production
 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    # Secrets referenced below are resolved from this GitHub Environment, so each environment
+    # (production, testing) has its own set of secrets with the same names.
+    environment: ${{ github.event_name == 'push' && 'production' || inputs.environment }}
+
+    # Never run two deploys against the same environment (and terraform state) at once.
+    concurrency:
+      group: deploy-${{ github.event_name == 'push' && 'production' || inputs.environment }}
+      cancel-in-progress: false
+
+    # Use the Bash shell regardless of whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
       run:
         shell: bash
 
     steps:
+    # Map the GitHub Environment to its terraform workspace and base tfvars file.
+    - name: Resolve Environment Config
+      run: |
+        case "$DEPLOY_ENVIRONMENT" in
+          production)
+            echo "TF_WORKSPACE=default" >> "$GITHUB_ENV"
+            echo "BASE_TFVARS=base.prod.tfvars" >> "$GITHUB_ENV"
+            ;;
+          testing)
+            echo "TF_WORKSPACE=test" >> "$GITHUB_ENV"
+            echo "BASE_TFVARS=base.test.tfvars" >> "$GITHUB_ENV"
+            ;;
+          *)
+            echo "Unknown environment: $DEPLOY_ENVIRONMENT" >&2
+            exit 1
+            ;;
+        esac
+
     - name: "Configure AWS Credentials"
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -51,9 +89,10 @@ jobs:
     # Prime tfvars
     - name: Setup Base Terraform Vars
       working-directory: ./terraform
-      run: cp base.prod.tfvars terraform.tfvars
+      run: cp "$BASE_TFVARS" terraform.tfvars
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    # TF_WORKSPACE (set above) selects which workspace's state is used.
     - name: Terraform Init
       working-directory: ./terraform
       run: terraform init
