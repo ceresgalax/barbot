@@ -73,6 +73,9 @@ jobs:
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3.1.1
+      with:
+        # The wrapper adds extra lines to terraform's stdout, which breaks parsing `terraform output -json`.
+        terraform_wrapper: false
 
     - name: Setup Python
       uses: actions/setup-python@v5.1.0
@@ -106,3 +109,8 @@ jobs:
         -var bar_spreadsheet="${{ secrets.BAR_SPREADSHEET }}"
         -var selenium_server_url="${{ secrets.SELENIUM_SERVER_URL }}"
         -var announcement_chat_id="${{ secrets.ANNOUNCEMENT_CHAT_ID }}"
+
+    # Point the Telegram bot at the deployed webhook and register its commands.
+    # Reads the needed infrastructure information from terraform.
+    - name: Set Webhook
+      run: ./set-webhook.py terraform

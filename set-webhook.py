@@ -44,6 +44,33 @@ def get_data_from_local():
     return bot_token, webhook_url, webhook_secret
 
 
+COMMANDS = [
+    {'command': 'start', 'description': 'How to use barbot'},
+    {'command': 'list', 'description': 'List the current suggestions'},
+    {'command': 'map', 'description': 'Show a map of the current suggestions'},
+    {'command': 'delete', 'description': 'Delete one of your suggestions'},
+    {'command': 'newevent', 'description': 'Create a scheduled event (admins only)'},
+    {'command': 'delevent', 'description': 'Delete a scheduled event (admins only)'},
+]
+
+
+def telegram_post(bot_token, method, payload):
+    request = urllib.request.Request(
+        url=f'https://api.telegram.org/bot{bot_token}/{method}',
+        data=json.dumps(payload).encode('utf-8'),
+        headers={
+            'Content-Type': 'application/json',
+            'User-Agent': 'barbot by @ceresgalax'
+        },
+        method='POST'
+    )
+
+    with urllib.request.urlopen(request) as response:
+        if response.status < 200 or response.status >= 300:
+            print(f'Failed to call {method}')
+            exit(1)
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("context", choices=["terraform", "local"])
 
@@ -59,23 +86,17 @@ def main():
     bot_token, webhook_url, webhook_secret = fn()
     print(f"Webhook URL: {webhook_url}")
 
-    request = urllib.request.Request(
-        url=f'https://api.telegram.org/bot{bot_token}/setWebhook',
-        data=json.dumps({
-            'url': webhook_url,
-            'secret_token': webhook_secret
-        }).encode('utf-8'),
-        headers={
-            'Content-Type': 'application/json',
-            'User-Agent': 'barbot by @ceresgalax'
-        },
-        method='POST'
-    )
+    telegram_post(bot_token, 'setWebhook', {
+        'url': webhook_url,
+        'secret_token': webhook_secret
+    })
 
-    with urllib.request.urlopen(request) as response:
-        if response.status < 200 or response.status >= 300:
-            print('Failed to set webhook')
-            exit(1)
+    telegram_post(bot_token, 'deleteMyCommands', {'scope': {'type': 'default'}})
+    telegram_post(bot_token, 'deleteMyCommands', {'scope': {'type': 'all_group_chats'}})
+    telegram_post(bot_token, 'setMyCommands', {
+        'scope': {'type': 'all_private_chats'},
+        'commands': COMMANDS,
+    })
 
 
 if __name__ == "__main__":

@@ -78,13 +78,14 @@ The `Deploy` workflow (`.github/workflows/deploy.yml`) deploys to one of two Git
 | `production`       | Pushing a `v*` tag, or running manually        | `default`           | `base.prod.tfvars`       |
 | `testing`          | Running manually (Actions → Deploy → Run workflow) | `test`          | `base.test.tfvars`       |
 
-Each environment needs its own copy of these secrets (Settings → Environments → *environment* → Environment secrets):
+Secrets shared by every environment are set at the repository level (Settings → Secrets and variables → Actions):
 
 - `ACTIONS_ROLE_ARN`
+
+Each environment needs its own copy of these secrets (Settings → Environments → *environment* → Environment secrets):
+
 - `TELEGRAM_BOT_TOKEN`
 - `MAIN_CHAT_ID`
 - `BAR_SPREADSHEET`
 - `SELENIUM_SERVER_URL`
 - `ANNOUNCEMENT_CHAT_ID`
-
-The secret names are the same in both environments; the workflow picks up whichever set belongs to the environment it is deploying to.
