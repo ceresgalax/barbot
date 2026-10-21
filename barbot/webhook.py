@@ -16,6 +16,11 @@ from .bars import Bars
 from .database import Database
 
 
+DELETE_SUGGESTION_PREFIX = 'del:'
+DELETE_EVENT_PREFIX = 'delev:'
+CANCEL = 'cancel'
+
+
 def error(message: str):
     sys.stderr.write(message)
     sys.stderr.write('\n')
@@ -59,10 +64,14 @@ async def handle_webhook_async(body: Dict[str, Any]) -> Optional[Dict[str, Any]]
         await handle_message(update, update.message, db, bot, app_settings, bars)
         return None
 
+    if update.callback_query is not None:
+        await handle_callback_query(update, update.callback_query, db, bot, app_settings)
+        return None
+
     return None
 
 
-async def handle_inline_query(udpate: telegram.Update, query: telegram.InlineQuery, db: Database, bot: telegram.Bot, app: AppSettings) -> Optional[Dict[str, Any]]:
+async def handle_inline_query(update: telegram.Update, query: telegram.InlineQuery, db: Database, bot: telegram.Bot, app: AppSettings) -> Optional[Dict[str, Any]]:
     # Make sure the user is part of the chatroom
     is_member = await database.is_user_part_of_main_chat(bot, app, user_id=query.from_user.id)
 
@@ -97,6 +106,79 @@ async def handle_inline_query(udpate: telegram.Update, query: telegram.InlineQue
         'cache_time': 60,
         'is_personal': True  # Needs to be personal so that we don't leak suggestions to non-members.
     }
+
+
+async def handle_callback_query(update: telegram.Update, query: telegram.CallbackQuery, db: Database, bot: telegram.Bot, app: AppSettings) -> None:
+    data = query.data or ''
+    chat_id = query.message.chat.id if query.message else None
+    message_id = query.message.message_id if query.message else None
+
+    async def finish(message_text: str, answer_text: Optional[str] = None) -> None:
+        # Replace the keyboard message with the outcome so the buttons can't be tapped again.
+        if chat_id is not None and message_id is not None:
+            await bot.edit_message_text(message_text, chat_id=chat_id, message_id=message_id)
+        await bot.answer_callback_query(query.id, text=answer_text)
+
+    if data.startswith(DELETE_SUGGESTION_PREFIX):
+        suggestion_uuid = data[len(DELETE_SUGGESTION_PREFIX):]
+        if suggestion_uuid == CANCEL:
+            await finish('Cancelled.')
+            return
+
+        suggestion = db.get_suggestion_by_uuid(suggestion_uuid)
+        if suggestion is None:
+            await finish('That suggestion no longer exists.', 'That suggestion no longer exists.')
+            return
+
+        is_admin = await database.is_user_admin_of_main_chat(bot, app, query.from_user.id)
+        if not is_admin and query.from_user.id != suggestion.user_id:
+            await bot.answer_callback_query(
+                query.id,
+                text='Sorry, you can only delete venues that you suggested.',
+                show_alert=True
+            )
+            return
+
+        try:
+            db.remove_suggestion(suggestion.uuid)
+        except:
+            traceback.print_exc()
+            await bot.answer_callback_query(query.id, text=f'Was unable to remove "{suggestion.venue}" :(', show_alert=True)
+            return
+
+        await finish(f'Deleted "{suggestion.venue}".')
+        await bot.send_message(
+            app.MAIN_CHAT_ID,
+            f'@{query.from_user.username} has removed @{suggestion.user_handle}\'s suggestion for '
+            f'"{suggestion.venue}"'
+        )
+
+    elif data.startswith(DELETE_EVENT_PREFIX):
+        event_uuid = data[len(DELETE_EVENT_PREFIX):]
+        if event_uuid == CANCEL:
+            await finish('Cancelled.')
+            return
+
+        if not await database.is_user_admin_of_main_chat(bot, app, query.from_user.id):
+            await bot.answer_callback_query(query.id, text='You must be an admin to delete events.', show_alert=True)
+            return
+
+        event = next((e for e in db.get_scheduled_venues() if e.uuid == event_uuid), None)
+        if event is None:
+            await finish('That scheduled event no longer exists.', 'That scheduled event no longer exists.')
+            return
+
+        try:
+            db.remove_scheduled_venue(event.uuid)
+        except:
+            traceback.print_exc()
+            await bot.answer_callback_query(query.id, text='Sorry, I had trouble deleting the scheduled event.', show_alert=True)
+            return
+
+        await finish(f'Deleted scheduled event "{event.venue_name}".')
+
+    else:
+        await bot.answer_callback_query(query.id)
 
 
 async def add_suggestion(venue: str, user_id: int, username: str, message_id: int, db: Database, bot: telegram.Bot, app: AppSettings, bars: Bars) -> None:
@@ -192,47 +274,30 @@ async def handle_message(update: telegram.Update, message: telegram.Message, db:
                     f'You can also use @{app.BOT_USERNAME} in your message to suggest a venue.'
             await bot.send_message(message.chat.id, message_text)
 
-        elif message_lower.startswith('/delete ') or message_lower == '/delete':
-            venue_name = message.text[len('/delete '):].strip()
-            if not venue_name:
+        elif message_lower.startswith('/delete'):
+            suggestions = db.get_current_suggestions(bypass_cache=True)
+            if not is_admin:
+                suggestions = [s for s in suggestions if s.user_id == message.from_user.id]
+            if not suggestions:
                 await bot.send_message(
                     message.chat.id,
-                    'Usage: /delete <venue_name>'
+                    'There are no suggestions to delete.' if is_admin else
+                    "You don't have any suggestions to delete."
                 )
             else:
-                suggestions = db.get_current_suggestions(bypass_cache=False)
-                suggestion = next((s for s in suggestions if s.venue.lower() == venue_name.lower()), None)
-                if suggestion:
-                    if is_admin or message.from_user.id == suggestion.user_id:
-                        try:
-                            db.remove_suggestion(suggestion.uuid)
-                        except:
-                            await bot.send_message(
-                                message.chat.id,
-                                f'Was unable to remove suggestion "{venue_name}" :('
-                            )
-                            traceback.print_exc()
-                            return
-                        await bot.send_message(
-                            message.chat.id,
-                            f'Successfully removed "{venue_name}" from suggestions.'
-                        )
-                        await bot.send_message(
-                            app.MAIN_CHAT_ID,
-                            f'@{message.from_user.username} has removed @{suggestion.user_handle}\'s suggestion for '
-                            f'"{suggestion.venue}"'
-                        )
-                    else:
-                        await bot.send_message(
-                            message.chat.id,
-                            'Sorry, you can only delete venues that you suggested. '
-                            '(Only admins can delete any suggestion)'
-                        )
-                else:
-                    await bot.send_message(
-                        message.chat.id,
-                        f'Could not find suggestion "{venue_name}" to remove.'
-                    )
+                buttons = [
+                    [telegram.InlineKeyboardButton(
+                        f'{s.venue} — @{s.user_handle}' if is_admin else s.venue,
+                        callback_data=f'{DELETE_SUGGESTION_PREFIX}{s.uuid}'
+                    )]
+                    for s in suggestions
+                ]
+                buttons.append([telegram.InlineKeyboardButton('Cancel', callback_data=f'{DELETE_SUGGESTION_PREFIX}{CANCEL}')])
+                await bot.send_message(
+                    message.chat.id,
+                    'Which suggestion do you want to delete?',
+                    reply_markup=telegram.InlineKeyboardMarkup(buttons)
+                )
 
         elif message_lower.startswith('/list') or message_lower == '/list':
             if await database.is_user_part_of_main_chat(bot, app, message.from_user.id):
@@ -313,27 +378,23 @@ async def handle_message(update: telegram.Update, message: telegram.Message, db:
                 await bot.send_message(message.chat.id, 'Event created!')
 
         elif message_lower.startswith('/delevent'):
-            event_name = message.text[len('/delevent '):].strip()
             if not is_admin:
                 await bot.send_message(message.chat.id, 'You must be an admin to use this command.')
-            elif not event_name:
-                await bot.send_message(message.chat.id, 'Usage: /newevent <scheduled event name>')
             else:
                 events = db.get_scheduled_venues()
-                event = next((e for e in events if e.venue_name.lower() == event_name.lower()), None)
-
-                if event:
-                    try:
-                        db.remove_scheduled_venue(event.uuid)
-                    except:
-                        traceback.print_exc()
-                        await bot.send_message(message.chat.id,f'Sorry, I had trouble deleting the scheduled event.')
-                        return
-
-                    await bot.send_message(message.chat.id, f'Deleted scheduled event "{event_name}".')
-
+                if not events:
+                    await bot.send_message(message.chat.id, 'There are no scheduled events to delete.')
                 else:
-                    await bot.send_message(message.chat.id,f'Could not find scheduled event "{event_name}" to remove.')
+                    buttons = [
+                        [telegram.InlineKeyboardButton(e.venue_name, callback_data=f'{DELETE_EVENT_PREFIX}{e.uuid}')]
+                        for e in events
+                    ]
+                    buttons.append([telegram.InlineKeyboardButton('Cancel', callback_data=f'{DELETE_EVENT_PREFIX}{CANCEL}')])
+                    await bot.send_message(
+                        message.chat.id,
+                        'Which scheduled event do you want to delete?',
+                        reply_markup=telegram.InlineKeyboardMarkup(buttons)
+                    )
 
         elif BARNIGHT_HASHTAG in message_lower:
             await bot.send_message(
