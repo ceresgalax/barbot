@@ -5,8 +5,9 @@ Description: barbot
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 10
-    MemorySize: 128
+    # Higher memory size and timeout than in real AWS due to overhead / local emulation depending on platform
+    Timeout: 20
+    MemorySize: 512
 
 Resources:
   WebhookFunction:
@@ -15,7 +16,7 @@ Resources:
       CodeUri: ./
       Handler: barbot.webhook.handle_webhook
       Runtime: python3.11
-      Timeout: 10
+      Timeout: 20
       Architectures:
         - x86_64
       Events:
@@ -33,6 +34,7 @@ Resources:
           WEBHOOK_SECRET: 'NONE'
           DYNAMODB_ENDPOINT_URL: http://barbot-dynamodb:8000
           DYNAMO_WEEK_TABLE_NAME: barbot-local-table
+          DYNAMO_EVENTS_TABLE_NAME: barbot-local-events
           BOT_USERNAME: barbot-local
           BAR_SPREADSHEET:
           SELENIUM_SERVER_URL:
@@ -42,7 +44,7 @@ Resources:
       CodeUri: ./
       Handler: barbot.sequence.handle_function_call
       Runtime: python3.11
-      Timeout: 10
+      Timeout: 20
       Architectures:
         - x86_64
       Events:
@@ -59,6 +61,7 @@ Resources:
           WEBHOOK_SECRET: 'NONE'
           DYNAMODB_ENDPOINT_URL: http://barbot-dynamodb:8000
           DYNAMO_WEEK_TABLE_NAME: barbot-local-table
+          DYNAMO_EVENTS_TABLE_NAME: barbot-local-events
           BOT_USERNAME: barbot-local
           BAR_SPREADSHEET:
           SELENIUM_SERVER_URL:

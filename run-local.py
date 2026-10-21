@@ -28,13 +28,19 @@ run_or_die("docker compose create")
 run_or_die("docker compose start")
 run_or_die("sam build")
 
-# set up dynamodb
-state = os.system(
-    "aws dynamodb create-table --table-name barbot-local-table --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=10 --endpoint-url http://localhost:8000"
-)
-if state == 0:
-    run_or_die("""aws dynamodb update-item --table-name barbot-local-table --endpoint-url http://localhost:8000 --key '{"id": {"S": "current"}}' --update-expression 'SET venues = :empty' --expression-attribute-values '{":empty": {"M": {}}}'""")
-    run_or_die("""aws dynamodb update-item --table-name barbot-local-table --endpoint-url http://localhost:8000 --key '{"id": {"S": "current"}}' --update-expression 'SET poll_id = :p' --expression-attribute-values '{":p": {"N": "0"}}'""")
+# set up dynamodb, mirroring the tables and initial items in terraform/dynamo.tf.
+# Table names must match the DYNAMO_*_TABLE_NAME variables in template.yaml.
+DYNAMO_TABLES = {
+    "barbot-local-table": {"id": {"S": "current"}, "venues": {"M": {}}, "poll_id": {"N": "0"}},
+    "barbot-local-events": {"id": {"S": "current"}, "events": {"M": {}}},
+}
+for table_name, initial_item in DYNAMO_TABLES.items():
+    state = os.system(
+        f"aws dynamodb create-table --table-name {table_name} --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --billing-mode PAY_PER_REQUEST --endpoint-url http://localhost:8000 > /dev/null"
+    )
+    # Only seed newly created tables so existing local data is kept.
+    if state == 0:
+        run_or_die(f"aws dynamodb put-item --table-name {table_name} --endpoint-url http://localhost:8000 --item '{json.dumps(initial_item)}'")
 
 run_or_die("./set-webhook.py local")
 os.execvp(
